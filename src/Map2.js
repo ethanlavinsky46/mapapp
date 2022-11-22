@@ -25,7 +25,7 @@ const Map = () => {
       container: mapContainerRef.current,
       style: "mapbox://styles/ethanlavinsky46/cla93j7p1000j14pa6sblzm26",
       center: middle,
-      zoom: 12,
+      zoom: 13,
     });
 
     map.on("load", () => {
