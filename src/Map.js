@@ -5,7 +5,17 @@ import geoJson from "./vaxCentersCon.json";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 import * as turf from "@turf/turf";
-import covid from "./covidData.json";
+import covid from "./covidData2.json";
+
+<>
+  <div className="side">
+    <div className="heading">
+      <h1>Our locations</h1>
+    </div>
+    <div id="listings" className="listings" />
+  </div>
+  <div id="map" className="map" />
+</>;
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiZXRoYW5sYXZpbnNreTQ2IiwiYSI6ImNsOWZ4YzI5dTBkbnkzdm14ZGlwbzUwbTgifQ.jByzOogEAXnVPymbyXjj-Q";
@@ -35,7 +45,7 @@ let zips = [
   11428, 11429, 11432, 11433, 11434, 11435, 11436, 11691, 11692, 11693, 11694,
   11697,
 ];
-let zipInput = 10028;
+let zipInput = 11212;
 let zip;
 
 for (let i = 0; i < zips.length; i++) {
@@ -44,8 +54,18 @@ for (let i = 0; i < zips.length; i++) {
   }
 }
 
+let data = [];
+
+for (let i = 0; i < covid.length; i++) {
+  data.push({
+    code: covid[i].ZIP.toString(),
+    hdi: covid[i].hospitalization_count_28day,
+  });
+}
+console.log(data);
+
 const Map = () => {
-  var middle = [covid.features[zip].lon, covid.features[zip].lat];
+  var middle = [covid[zip].lon, covid[zip].lat];
   const mapContainerRef = useRef(null);
 
   // Initialize map when component mounts
@@ -54,8 +74,20 @@ const Map = () => {
       container: mapContainerRef.current,
       style: "mapbox://styles/ethanlavinsky46/cla93j7p1000j14pa6sblzm26",
       center: middle,
-      zoom: 13,
+      zoom: 15,
     });
+
+    // disable map rotation using right click + drag
+    map.dragRotate.disable();
+
+    // disable map rotation using touch rotation gesture
+    map.touchZoomRotate.disableRotation();
+
+    // const data = [
+    //   { code: "10002", hdi: 0.811 },
+    //   { code: "10001", hdi: 0.816 },
+    //   { code: "10009", hdi: 0.787 },
+    // ];
 
     map.on("load", () => {
       function addMarkers() {
@@ -108,23 +140,68 @@ const Map = () => {
         bbox: [-75.063812, 40.336768, -72.977783, 41.121429], // Set the bounding box coordinates
       });
 
-      map.addControl(geocoder, "top-left");
+      // map.addControl(geocoder, "top-left");
 
       addMarkers();
 
       map.addSource("zips", {
         type: "vector",
-        url: "mapbox://ethanlavinsky46.bozah4t4",
+        url: "mapbox://ethanlavinsky46.c5dqzdw0",
       });
 
+      // Build a GL match expression that defines the color for every vector tile feature
+      // Use the ISO 3166-1 alpha 3 code as the lookup key for the country shape
+      const matchExpression = ["match", ["get", "ZIP"]];
+
+      // Calculate color values for each country based on 'hdi' value
+      for (const row of data) {
+        // Convert the range of data values to a suitable color
+        const green = (row["hdi"] / 40) * 255;
+        const color = `rgb(0, ${green}, 0)`;
+
+        matchExpression.push(row["code"], color);
+      }
+
+      // Last value is the default, used where there is no data
+      matchExpression.push("rgba(0, 0, 0, 0)");
+
+      // map.addLayer({
+      //   id: "zip-fill-test",
+      //   type: "fill",
+      //   source: "zips",
+      //   "source-layer": "nyc-zip-code-7b06h0",
+      //   paint: {
+      //     "fill-color": "#FFF",
+      //     "fill-opacity": 0.5,
+      //   },
+      // });
+
+      map.addLayer(
+        {
+          id: "join",
+          type: "fill",
+          source: "zips",
+          "source-layer": "nyc-zip-code-7b06h0",
+          paint: {
+            "fill-color": matchExpression,
+            "fill-opacity": 0.75,
+          },
+        },
+        "admin-1-boundary-bg"
+      );
+
       map.addLayer({
-        id: "zip-fill-test",
-        type: "fill",
+        id: "zip-lines",
+        type: "line",
         source: "zips",
-        "source-layer": "nyu-2451-34509-geojson-58hf5f",
+        "source-layer": "nyc-zip-code-7b06h0",
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
         paint: {
-          "fill-color": "#FFF",
-          "fill-opacity": 0.5,
+          "line-color": "#ff69b4",
+          "line-width": 1,
         },
       });
 
@@ -158,24 +235,9 @@ const Map = () => {
 
       buildLocationList(stores);
 
-      map.addLayer({
-        id: "zip-lines",
-        type: "line",
-        source: "zips",
-        "source-layer": "nyu-2451-34509-geojson-58hf5f",
-        layout: {
-          "line-join": "round",
-          "line-cap": "round",
-        },
-        paint: {
-          "line-color": "#ff69b4",
-          "line-width": 1,
-        },
-      });
-
       function fisrt() {}
 
-      // geocoder.on("result", () => {
+      // geocoder.on("result", (event) => {
       const searchResult = middle;
       // const searchResult = event.result.geometry;
       const options = { units: "miles" };
@@ -217,7 +279,7 @@ const Map = () => {
     function flyToStore(currentFeature) {
       map.flyTo({
         center: currentFeature.geometry.coordinates,
-        zoom: 14,
+        zoom: 15.5,
       });
     }
 
@@ -317,5 +379,14 @@ const Map = () => {
 
   return <div className="map-container" ref={mapContainerRef} />;
 };
+
+<>
+  <div className="side">
+    <div className="heading">
+      <h1>Our locations</h1>
+    </div>
+    <div id="listings" className="listings" />
+  </div>
+</>;
 
 export default Map;

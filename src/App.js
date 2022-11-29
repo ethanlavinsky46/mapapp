@@ -1,6 +1,6 @@
 import React from "react";
-import Map from "./Map";
 import "./App.css";
+import SideBar from "./sidebar";
 
 function App() {
   const [data, setData] = React.useState(null);
@@ -12,9 +12,8 @@ function App() {
   // }, []);
 
   return (
-    <div class="map">
-      {/* <p>{!data ? "Loadng..." : data}</p> */}
-      <Map />
+    <div class="app">
+      <SideBar />
     </div>
   );
 }
