@@ -1,6 +1,6 @@
 import React from "react";
 import "./App.css";
-import SideBar from "./sidebar";
+import SideBar from "./Sidebar";
 
 function App() {
   const [data, setData] = React.useState(null);
